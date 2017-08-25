@@ -10,6 +10,7 @@ from utils import get_now
 class daomubijiSpider(RedisSpider):
     name = "daomubijiSpider"
     redis_key = 'daomubijiSpider:start_urls'
+    retry_xpath = ''
     start_urls = ['http://www.daomubiji.com/']
 
     def parse_content(self,response): # 爬取每一章节的内容
