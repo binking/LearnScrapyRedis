@@ -4,9 +4,51 @@
 #
 # See documentation in:
 # http://doc.scrapy.org/en/latest/topics/spider-middleware.html
+import random
 
 from scrapy import signals
+from scrapy.conf import settings
 from scrapy.contrib.downloadermiddleware.retry import RetryMiddleware
+from scrapy.contrib.downloadermiddleware.useragent import UserAgentMiddleware
+from scrapy.contrib.downloadermiddleware.httpproxy import HttpProxyMiddleware
+from scrapy.utils.response import response_status_message
+
+
+def CustomRetryMidlleware(RetryMiddleware):
+    """
+    Buddy, you must understand when to retry:
+        1. Wrong Http code: retry and change abuyun channel;
+        2. Wrong Html content
+        3. 
+    :param RetryMiddleware: 
+    :return: 
+    """
+    pass
+
+
+class CustomRetryMiddleware(RetryMiddleware):
+    def process_response(self, request, response, spider):
+        if request.meta.get('dont_retry', False):
+            return response
+        if response.status in self.retry_http_codes:
+            reason = response_status_message(response.status)
+            return self._retry(request, reason, spider) or response
+        # if item got wrong
+        if response.status == 200 and response.xpath(spider.retry_xpath):  # if can't get the correct xpath
+            return self._retry(request, 'response got xpath "{}"'.format(spider.retry_xpath), spider) or response
+        return response
+
+
+class RandomUserAgentMiddleware(UserAgentMiddleware):
+    def process_request(self, request, spider):
+        ua = random.choice(settings['USER_AGENTS'])
+        request.headers.setdefault('User-Agent', ua)
+
+class AbuyunProxyMiddleware(HttpProxyMiddleware):
+    def process_request(self, request, spider):
+        request.meta["proxy"] = settings['proxyServer']
+        request.headers["Proxy-Authorization"] = settings['proxyAuth']
+
 
 class DaomubijiSpiderMiddleware(object):
     # Not all methods need to be defined. If a method is not defined,
